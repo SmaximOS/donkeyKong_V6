@@ -1,0 +1,3 @@
+User Manual - Donkey Kong
+-Mario is given 3 chances (lives) to reach Pauline, Mario loses a life and the game restarts if he faces a barrel, falls to the abyss, falls for 3 or more floors, or find himself near a barrels explosion (2 Characters difference).
+Controls: A - move left, S - stay, W - Jump(or climb a ladder if not moving aside), D - move right, X - Go down a ladder(if possible and not moving aside)
