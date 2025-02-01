@@ -853,6 +853,9 @@ void Game::run(bool saveMode, bool loadMode, bool silentMode)
 	bool gameRunning = false, exit = false;
 	bool gameValid;
 	int menuOption = 0;
+	int lives;
+	int levelsleft;
+	Level currLvl;
 
 	map<int, Level> alllevels;
 	gameValid = FileHandler::loadAllFiles(alllevels);
@@ -871,83 +874,55 @@ void Game::run(bool saveMode, bool loadMode, bool silentMode)
 		return;
 	}
 
-	if (loadMode) {
-		std::string stepsfilename;
-		std::string resultfilename;
-		getFilename(currMapIndex->first, stepsfilename, resultfilename);
-		std::ifstream stepsFile(stepsfilename);
-		if (!stepsFile.is_open()) {
-			std::cerr << "Error: Could not open steps file: " << stepsfilename << std::endl;
-			// You might want to exit or revert to normal mode.
-		}
-		else {
-			// Read the seed from the first line.
-			std::string line;
-			if (std::getline(stepsFile, line)) {
-				std::istringstream iss(line);
-				iss >> loadedSeed;
-				std::srand(loadedSeed);
-			}
-			while (std::getline(stepsFile, line)) {
-				if (line.empty()) continue;
-				std::istringstream iss(line);
-				int timeStep, move;
-				bool hammerUsed = false;
-				std::string token;
-				if (!(iss >> timeStep >> move)) {
-					std::cerr << "Error parsing line: " << line << std::endl;
-					continue;
-				}
-				// Look for an optional third token.
-				if (iss >> token) {
-					if (token == "P")
-						hammerUsed = true;
-				}
-				recordedSteps.push_back({ timeStep, static_cast<GameConfig::ARROWKEYS>(move), hammerUsed });
-			}
-			stepsFile.close();
-		}
-	}
-
+	
+	
+	
 	while (!exit) {
-		if (menuOption == 0) //True in the first stage only, thus we can check whether files didnt load
-			startMenu(false);
-		else
-			startMenu();
-		menuOption = _getch() - '0';
-		Level currLvl;
-		int lives;
-		int levelsleft;
-		switch (menuOption)
-		{
-		case 1:
-			if (saveMode)
-				FileHandler::deleteDocFiles(); //Delete files from previous game
-
-			currMapIndex = lvlSelect(alllevels);
-			currLvl = currMapIndex->second;
-			setLevel(&(currLvl));
-			gameRunning = true;
-			levelsleft = std::distance(currMapIndex, alllevels.end()); //How many levels left to play (relevant to the final score)
-			lives = 3;
-			score = 999;
-			break;
-		case 8:
-			// Show instructions
-			showInstructions();
-			break;
-		case 9:
-			// Exit the game
-			std::cout << "\nExiting game...\n";
-			gameRunning = false;
-			exit = true;
-			break;  // Exit the program
-		default:
-			// Invalid option
-			std::cout << "Invalid choice, please try again.\n";
-			break;
+		if (loadMode) {
+			for (auto currMapIndex = alllevels.begin(); currMapIndex != alllevels.end(); ++currMapIndex) {
+				Level currLvl = currMapIndex->second;
+				setLevel(&currLvl);
+				gameRunning = true;
+				lives = 3;
+				score = 999;
+			}
 		}
+			else if (menuOption == 0) //True in the first stage only, thus we can check whether files didnt load
+				startMenu(false);
+			else
+				startMenu();
+		if (!loadMode) {
+			menuOption = _getch() - '0';
+			switch (menuOption)
+			{
+			case 1:
+				if (saveMode)
+					FileHandler::deleteDocFiles(); //Delete files from previous game
 
+				currMapIndex = lvlSelect(alllevels);
+				currLvl = currMapIndex->second;
+				setLevel(&(currLvl));
+				gameRunning = true;
+				levelsleft = std::distance(currMapIndex, alllevels.end()); //How many levels left to play (relevant to the final score)
+				lives = 3;
+				score = 999;
+				break;
+			case 8:
+				// Show instructions
+				showInstructions();
+				break;
+			case 9:
+				// Exit the game
+				std::cout << "\nExiting game...\n";
+				gameRunning = false;
+				exit = true;
+				break;  // Exit the program
+			default:
+				// Invalid option
+				std::cout << "Invalid choice, please try again.\n";
+				break;
+			}
+		}
 		while (gameRunning) {
 			system("cls");
 			ShowConsoleCursor(false);
@@ -982,9 +957,11 @@ void Game::run(bool saveMode, bool loadMode, bool silentMode)
 			int indexofCurrLadder = -1;
 
 			//The random sequence generator
-			unsigned int seed = setSeed();
-			std::srand(seed);
-
+			unsigned int seed;
+			if (!loadMode) {
+				seed = setSeed();
+				std::srand(seed);
+			}
 			//GameSeconds
 			int timePlayed = 0;
 			int gameCounter = 0;
@@ -1015,6 +992,43 @@ void Game::run(bool saveMode, bool loadMode, bool silentMode)
 				steps << seed << endl;
 			}
 
+			if (loadMode) {
+				std::string stepsfilename;
+				std::string resultfilename;
+				getFilename(currMapIndex->first, stepsfilename, resultfilename);
+				std::ifstream stepsFile(stepsfilename);
+				if (!stepsFile.is_open()) {
+					std::cerr << "Error: Could not open steps file: " << stepsfilename << std::endl;
+					// You might want to exit or revert to normal mode.
+				}
+				else {
+					// Read the seed from the first line.
+					std::string line;
+					if (std::getline(stepsFile, line)) {
+						std::istringstream iss(line);
+						iss >> loadedSeed;
+						std::srand(loadedSeed);
+					}
+					while (std::getline(stepsFile, line)) {
+						if (line.empty()) continue;
+						std::istringstream iss(line);
+						int timeStep, move;
+						bool hammerUsed = false;
+						std::string token;
+						if (!(iss >> timeStep >> move)) {
+							std::cerr << "Error parsing line: " << line << std::endl;
+							continue;
+						}
+						// Look for an optional third token.
+						if (iss >> token) {
+							if (token == "P")
+								hammerUsed = true;
+						}
+						recordedSteps.push_back({ timeStep, static_cast<GameConfig::ARROWKEYS>(move), hammerUsed });
+					}
+					stepsFile.close();
+				}
+			}
 
 			do {
 
@@ -1029,7 +1043,8 @@ void Game::run(bool saveMode, bool loadMode, bool silentMode)
 						}
 						recordedIndex++;
 					}
-				}
+				}else
+					
 				if (!wPressed) //Not Jump Mode
 				{
 
